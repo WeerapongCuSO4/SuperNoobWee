@@ -1,0 +1,74 @@
+-- ดึงข้อมูล Player
+local player = game:GetService("Players").LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local data = playerGui:WaitForChild("Data")
+local coinsObj = data:WaitForChild("Coins")
+
+-- 🖤 สร้าง GUI ลด CPU และแสดงยอดเห็ด 🖤 --
+local screenGui = Instance.new("ScreenGui")
+screenGui.ResetOnSpawn = false -- ป้องกันหายเมื่อรีเซ็ตตัวละคร
+screenGui.IgnoreGuiInset = true -- ✅ คลุมเต็ม 100% ของหน้าจอ
+screenGui.Parent = playerGui
+
+-- สร้างพื้นหลังสีดำ **(คลุมทั้งหน้าจอจริงๆ)**
+local blackFrame = Instance.new("Frame")
+blackFrame.Size = UDim2.new(1, 0, 1, 0) -- ✅ คลุมเต็ม 100%
+blackFrame.Position = UDim2.new(0, 0, 0, 0) -- ✅ อยู่มุมบนสุด
+blackFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- สีดำ
+blackFrame.ZIndex = 10 -- **ให้อยู่ด้านหน้า**
+blackFrame.Parent = screenGui
+
+-- สร้าง TextLabel สำหรับแสดงยอดเห็ด (ใหญ่ + ตรงกลาง)
+local shoomsLabel = Instance.new("TextLabel")
+shoomsLabel.Size = UDim2.new(0.8, 0, 0.2, 0) 
+shoomsLabel.Position = UDim2.new(0.1, 0, 0.4, 0) -- **ให้อยู่กลางจอ**
+shoomsLabel.BackgroundTransparency = 1
+shoomsLabel.TextColor3 = Color3.new(1, 1, 1) -- สีขาว
+shoomsLabel.Font = Enum.Font.SourceSansBold
+shoomsLabel.TextScaled = true
+shoomsLabel.Text = "🍄 Shooms: 0" -- ค่าเริ่มต้น
+shoomsLabel.ZIndex = 11
+shoomsLabel.Parent = screenGui
+
+-- สร้าง TextLabel สำหรับแสดงเวลาที่ออนไลน์
+local timeLabel = Instance.new("TextLabel")
+timeLabel.Size = UDim2.new(0.8, 0, 0.1, 0)
+timeLabel.Position = UDim2.new(0.1, 0, 0.55, 0) -- **อยู่ใต้ยอดเห็ด**
+timeLabel.BackgroundTransparency = 1
+timeLabel.TextColor3 = Color3.new(1, 1, 1) -- สีขาว
+timeLabel.Font = Enum.Font.SourceSansBold
+timeLabel.TextScaled = true
+timeLabel.Text = "⏳ Online: 00:00:00" -- ค่าเริ่มต้น
+timeLabel.ZIndex = 11
+timeLabel.Parent = screenGui
+
+-- ตัวแปรติดตามเวลาที่ออนไลน์ และจำนวนเห็ดที่เพิ่มขึ้น
+local startTime = tick() -- เก็บเวลาที่เข้าเกม
+local initialShooms = coinsObj and coinsObj.Value or 0 -- ค่าจำนวนเห็ดตอนเริ่ม
+local lastShooms = initialShooms -- เก็บค่าจำนวนเห็ดล่าสุด
+
+-- ฟังก์ชันอัปเดต Shooms และเวลาที่ออนไลน์
+local function updateShoomsAndTime()
+    -- อัปเดตเวลาที่ออนไลน์
+    local elapsedTime = tick() - startTime
+    local hours = math.floor(elapsedTime / 3600)
+    local minutes = math.floor((elapsedTime % 3600) / 60)
+    local seconds = math.floor(elapsedTime % 60)
+    timeLabel.Text = string.format("⏳ Online: %02d:%02d:%02d", hours, minutes, seconds)
+
+    -- อัปเดตยอด Shooms
+    local currentShooms = coinsObj and coinsObj.Value or 0
+    local shoomsDifference = currentShooms - initialShooms -- คำนวณจำนวนที่เพิ่มขึ้น
+
+    if shoomsDifference > 0 then
+        shoomsLabel.Text = string.format("🍄 Shooms: %d (+%d)", currentShooms, shoomsDifference)
+    else
+        shoomsLabel.Text = string.format("🍄 Shooms: %d", currentShooms)
+    end
+end
+
+-- อัปเดตค่าทุก 0.5 วินาทีให้ GUI แสดงค่า Shooms และเวลาที่ออนไลน์แบบเรียลไทม์
+game:GetService("RunService").Heartbeat:Connect(function()
+    wait(0.5) -- อัปเดตทุก 0.5 วินาที ลดการโหลด CPU
+    updateShoomsAndTime()
+end)
