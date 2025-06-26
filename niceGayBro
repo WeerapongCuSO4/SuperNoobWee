@@ -1,0 +1,228 @@
+-- 🔄 Continuous Memory Optimizer
+-- ทำงานเรื่อยๆ ไม่สนใจว่าเจอ character หรือไม่
+
+task.wait(15) -- รอให้เกมโหลดเสร็จเล็กน้อย
+
+print("🔄 Starting Continuous Memory Optimizer...")
+
+-- สร้างตัวแปร global เพื่อควบคุม
+_G.shouldStopOptimizer = false
+_G.optimizerRunning = true
+
+-- ฟังก์ชัน optimize แบบ lightweight
+local function lightweightOptimize()
+    local optimized = {
+        textures = 0,
+        meshes = 0,
+        effects = 0,
+        audio = 0
+    }
+    
+    -- Optimize เฉพาะสิ่งที่จำเป็น
+    for _, obj in pairs(workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("Texture") or obj:IsA("Decal") then
+                if obj.Texture ~= "" then
+                    obj.Texture = ""
+                    optimized.textures = optimized.textures + 1
+                end
+            elseif obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                if obj.Image ~= "" then
+                    obj.Image = ""
+                    optimized.textures = optimized.textures + 1
+                end
+            elseif obj:IsA("SpecialMesh") then
+                if obj.TextureId ~= "" then
+                    obj.TextureId = ""
+                    optimized.textures = optimized.textures + 1
+                end
+            elseif obj:IsA("MeshPart") then
+                if obj.RenderFidelity ~= Enum.RenderFidelity.Performance then
+                    obj.RenderFidelity = Enum.RenderFidelity.Performance
+                    optimized.meshes = optimized.meshes + 1
+                end
+            elseif obj:IsA("ParticleEmitter") or obj:IsA("Beam") or obj:IsA("Trail") then
+                if obj.Enabled then
+                    obj.Enabled = false
+                    optimized.effects = optimized.effects + 1
+                end
+            elseif obj:IsA("Sound") then
+                if obj.Volume > 0 then
+                    obj.Volume = 0
+                    optimized.audio = optimized.audio + 1
+                end
+            end
+        end)
+    end
+    
+    -- Optimize PlayerGui ที่อาจโหลดใหม่
+    pcall(function()
+        for _, obj in pairs(game.Players.LocalPlayer.PlayerGui:GetDescendants()) do
+            if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                if obj.Image ~= "" then
+                    obj.Image = ""
+                    optimized.textures = optimized.textures + 1
+                end
+            end
+        end
+    end)
+    
+    return optimized
+end
+
+-- ฟังก์ชัน optimize client settings
+local function optimizeClientSettings()
+    pcall(function()
+        -- ปิด 3D Rendering
+        game:GetService("RunService"):Set3dRenderingEnabled(false)
+        
+        -- ลด Graphics Quality
+        if settings():FindFirstChild("Rendering") then
+            local rendering = settings().Rendering
+            if rendering:FindFirstChild("QualityLevel") then
+                rendering.QualityLevel = Enum.QualityLevel.Level01
+            end
+        end
+        
+        -- ลด FPS
+        if setfpscap then
+            setfpscap(3)
+        end
+        
+        -- ปิด Lighting
+        local lighting = game:GetService("Lighting")
+        lighting.GlobalShadows = false
+        lighting.FogEnd = 50
+        lighting.Brightness = 1
+    end)
+end
+
+-- ฟังก์ชันหลัก - ทำงานเรื่อยๆ
+local function continuousOptimizer()
+    local cycleCount = 0
+    local totalOptimized = {
+        textures = 0,
+        meshes = 0,
+        effects = 0,
+        audio = 0
+    }
+    
+    while not _G.shouldStopOptimizer do
+        cycleCount = cycleCount + 1
+        
+        -- ทำ optimization
+        local optimized = lightweightOptimize()
+        
+        -- รวมผลลัพธ์
+        totalOptimized.textures = totalOptimized.textures + optimized.textures
+        totalOptimized.meshes = totalOptimized.meshes + optimized.meshes
+        totalOptimized.effects = totalOptimized.effects + optimized.effects
+        totalOptimized.audio = totalOptimized.audio + optimized.audio
+        
+        -- แสดงผลทุก 10 รอบ
+        if cycleCount % 10 == 0 then
+            local memUsage = collectgarbage("count")
+            print("🔄 Cycle " .. cycleCount .. " | Memory: " .. math.floor(memUsage) .. "KB | " .. 
+                  "Textures: " .. totalOptimized.textures .. " | " ..
+                  "Meshes: " .. totalOptimized.meshes .. " | " ..
+                  "Effects: " .. totalOptimized.effects)
+        end
+        
+        -- Force garbage collection ทุก 20 รอบ
+        if cycleCount % 20 == 0 then
+            collectgarbage("collect")
+        end
+        
+        -- Re-optimize client settings ทุก 50 รอบ
+        if cycleCount % 50 == 0 then
+            optimizeClientSettings()
+        end
+        
+        -- รอก่อนรอบถัดไป
+        task.wait(3) -- ทุก 3 วินาที
+    end
+    
+    _G.optimizerRunning = false
+    print("🛑 Continuous Optimizer stopped after " .. cycleCount .. " cycles")
+    print("📊 Total optimized: Textures:" .. totalOptimized.textures .. 
+          " Meshes:" .. totalOptimized.meshes ..
+          " Effects:" .. totalOptimized.effects ..
+          " Audio:" .. totalOptimized.audio)
+end
+
+-- เริ่ม client optimization ทันที
+optimizeClientSettings()
+
+-- เริ่ม continuous optimizer
+task.spawn(continuousOptimizer)
+
+-- สร้าง control functions
+_G.stopOptimizer = function()
+    _G.shouldStopOptimizer = true
+    print("🛑 Stopping continuous optimizer...")
+end
+
+_G.startOptimizer = function()
+    if _G.optimizerRunning then
+        print("⚠️ Optimizer already running!")
+        return
+    end
+    
+    _G.shouldStopOptimizer = false
+    _G.optimizerRunning = true
+    print("🔄 Restarting continuous optimizer...")
+    task.spawn(continuousOptimizer)
+end
+
+_G.getOptimizerStatus = function()
+    local memUsage = collectgarbage("count")
+    local status = {
+        running = _G.optimizerRunning,
+        shouldStop = _G.shouldStopOptimizer,
+        memoryUsage = math.floor(memUsage),
+        memoryMB = math.floor(memUsage / 1024)
+    }
+    
+    print("📊 Optimizer Status:")
+    for key, value in pairs(status) do
+        print("   " .. key .. ": " .. tostring(value))
+    end
+    
+    return status
+end
+
+_G.forceOptimizeNow = function()
+    print("⚡ Force optimizing now...")
+    local result = lightweightOptimize()
+    optimizeClientSettings()
+    collectgarbage("collect")
+    
+    print("✅ Force optimization complete:")
+    print("   Textures: " .. result.textures)
+    print("   Meshes: " .. result.meshes)
+    print("   Effects: " .. result.effects)
+    print("   Audio: " .. result.audio)
+    
+    return result
+end
+
+-- ตัวจับ error เพื่อป้องกัน crash
+task.spawn(function()
+    while _G.optimizerRunning do
+        task.wait(60) -- เช็คทุกนาที
+        
+        -- ถ้า optimizer หยุดโดยไม่ตั้งใจ ให้รีสตาร์ท
+        if not _G.shouldStopOptimizer and not _G.optimizerRunning then
+            print("🔧 Optimizer crashed, restarting...")
+            _G.startOptimizer()
+        end
+    end
+end)
+
+print("🎯 Continuous Memory Optimizer started!")
+print("📝 Commands:")
+print("   _G.stopOptimizer() - Stop optimizer")
+print("   _G.startOptimizer() - Start optimizer") 
+print("   _G.getOptimizerStatus() - Check status")
+print("   _G.forceOptimizeNow() - Force optimize immediately")
+print("🔄 Optimizer will run every 3 seconds continuously")
