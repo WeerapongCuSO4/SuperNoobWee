@@ -1,0 +1,63 @@
+task.wait(15)
+local function viewObject(obj)
+    if not obj then
+        warn("No object to view!")
+        return
+    end
+    
+    local success, errorMsg = pcall(function()
+        execCmd("view " .. obj.Name)
+    end)
+    
+    if not success then
+        warn("Failed to view object: " .. tostring(errorMsg))
+        -- ถ้าคำสั่ง view ล้มเหลว ลองตั้ง CameraSubject โดยตรง
+        local camera = workspace.CurrentCamera
+        if camera then
+            camera.CameraSubject = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+            camera.CameraType = Enum.CameraType.Follow
+        end
+    end
+end
+
+-- ได้รับ LocalPlayer
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+-- เส้นทางของกล้องที่จะเลือก
+local cameraTargets = {
+    workspace.Camera.OceanBorder,
+    workspace.Camera.WaterShadow
+}
+
+local viewright = true
+
+-- ลูปหลักที่ทำงานต่อเนื่อง
+spawn(function()
+    while true do
+        wait(1) -- รอ 1 วินาทีในแต่ละรอบ (สามารถปรับได้)
+        -- เช็คว่า LocalPlayer มี Character ใน workspace.Characters หรือไม่
+        if localPlayer and localPlayer.Name then
+            local playerCharacter = workspace.Characters:FindFirstChild(localPlayer.Name)
+            
+            if playerCharacter then
+                -- ถ้าเจอตัวละคร ให้เลือกกล้องแบบสุ่มระหว่าง 2 path
+                local randomIndex = math.random(1, #cameraTargets)
+                local targetCamera = cameraTargets[randomIndex]
+                
+                if targetCamera then
+                    if viewright then
+                        viewObject(targetCamera)
+                        viewright = false
+                    else
+                    end
+                else
+                    warn("Camera target not found")
+                end
+            else
+                viewright = true
+            end
+        else
+        end
+    end
+end)
