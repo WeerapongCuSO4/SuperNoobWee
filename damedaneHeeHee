@@ -1,0 +1,2011 @@
+task.wait(15)
+
+local Players = game:GetService("Players")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local GuiService = game:GetService("GuiService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+
+
+local function TutorialAutomation()
+    local function getFullPath(instance)
+        if not instance then return "nil" end
+        local path = instance.Name
+        local current = instance.Parent
+        while current and current ~= game do
+            path = current.Name .. "." .. path
+            current = current.Parent
+        end
+        return "game." .. path
+    end
+
+    local function isButtonAvailable(buttonPath)
+        local success, button = pcall(function() return buttonPath end)
+        if success and button and button:IsA("GuiObject") then
+            return button.Visible
+        end
+        return false
+    end
+
+    local function Clicked_Ui(path)
+        GuiService.SelectedObject = path
+        return true
+    end
+
+    local function Click_NOW()
+        VirtualInputManager:SendKeyEvent(true, 13, false, game)
+        task.wait(0.1)
+        VirtualInputManager:SendKeyEvent(false, 13, false, game)
+        task.wait(2)
+        Clicked_Ui(nil)
+        return true
+    end
+
+    local function Press_C_Key()
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.C, false, game)
+        task.wait(0.1)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.C, false, game)
+        return true
+    end
+
+    local function clickButton(button)
+        if not button then return false end
+        Clicked_Ui(button)
+        task.wait(0.2)
+        Click_NOW()
+        return true
+    end
+
+    local loopButtonPaths = {
+        function() return LocalPlayer.PlayerGui.TutorialGui.TalkFrame.SkipButton.UpperLabel end
+    }
+
+    local loopButtonNames = { "SkipButton" }
+
+    local step1Completed = false
+    local step2Completed = false
+
+    while true do
+        local isTutorial = LocalPlayer.Settings.Tutorial.Value
+        if not isTutorial then
+            break
+        end
+
+        if not step1Completed then
+            local vinrouSuccess, vinrouButton = pcall(function()
+                return LocalPlayer.PlayerGui.TutorialGui.SelectionFrame.SlotsFrame["Vin'rou"].InnerFrame.SelectButton
+                    .UpperLabel
+            end)
+            if vinrouSuccess and vinrouButton and vinrouButton.Parent.Visible then
+                if clickButton(vinrouButton) then
+                    task.wait(4)
+                    step1Completed = true
+                end
+            end
+        end
+
+        if step1Completed and not step2Completed then
+            local playSuccess, playButton = pcall(function()
+                return LocalPlayer.PlayerGui.EditorGui.EditFrame.BottomFrame.ButtonsFrame.PlayButton.UpperLabel
+            end)
+            if playSuccess and playButton and playButton.Parent.Visible then
+                if clickButton(playButton) then
+                    step2Completed = true
+                    task.wait(1)
+                end
+            end
+        end
+
+        local buttonFound = false
+        for i, getButtonPath in ipairs(loopButtonPaths) do
+            local success, button = pcall(function() return getButtonPath() end)
+            if success and button and button.Visible then
+                clickButton(button)
+                buttonFound = true
+                task.wait(0.5)
+                break
+            end
+        end
+
+        local nextSuccess, nextButton = pcall(function()
+            return LocalPlayer.PlayerGui.TutorialGui.TalkFrame.NextButton.UpperLabel
+        end)
+        if nextSuccess and nextButton and nextButton.Parent.Visible then
+            if clickButton(nextButton) then
+                task.wait(1.5)
+                break
+            end
+        end
+
+        task.wait(0.5)
+    end
+
+
+    local hasTimeout = false
+    local startTime
+
+    while true do
+        local nextSuccess, nextButton = pcall(function()
+            return LocalPlayer.PlayerGui.TutorialGui.TalkFrame.NextButton.UpperLabel
+        end)
+        if nextSuccess and nextButton and nextButton.Parent.Visible then
+            if clickButton(nextButton) then
+                task.wait(1.5)
+                Press_C_Key()
+                task.wait(0.5)
+                break
+            else
+                task.wait(1)
+            end
+        else
+            task.wait(1)
+        end
+
+        if not hasTimeout then
+            startTime = os.time()
+            hasTimeout = true
+        elseif os.time() - startTime > 60 then
+            break
+        end
+    end
+end
+
+local function Immune()
+    local blockedRemotes = {
+        "DrownRemote",
+        "CorruptionSelfDamage",
+        "FirenadoSelfDamage",
+        "GenericSelfDamage",
+        "HurricaneSelfDamage",
+        "MeteorFlySelfDamage",
+        "MeteorSelfDamage",
+        "TornadoSelfDamage"
+    }
+
+    local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+
+    local function hookFireServer()
+        local oldFireServer
+        oldFireServer = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            if method == "FireServer" and table.find(blockedRemotes, self.Name) then
+                return
+            end
+            return oldFireServer(self, ...)
+        end)
+    end
+
+    local function initBlock()
+        if Remotes then
+            hookFireServer()
+        end
+    end
+
+    initBlock()
+end
+
+local function SpeciesHandlerLoop()
+    local taskCompleted = false
+
+    while not taskCompleted do
+        local success, err = pcall(function()
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            local Players = game:GetService("Players")
+            local LocalPlayer = Players.LocalPlayer
+
+            local remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
+            if not remotes then
+                print("Remotes not found")
+                task.wait(5)
+                return
+            end
+
+            local Characters = workspace:WaitForChild("Characters", 10)
+            if not Characters then
+                print("Characters folder not found")
+                task.wait(5)
+                return
+            end
+
+            local playerName = LocalPlayer.Name
+            local playerChar = Characters:FindFirstChild(playerName)
+            if not playerChar then
+                print("Player character not found in workspace")
+                task.wait(2)
+                return
+            end
+
+            local playerData = playerChar:FindFirstChild("Data")
+            if not playerData then
+                print("Player data not found")
+                task.wait(2)
+                return
+            end
+            local species = playerData:GetAttribute("Species")
+            print("Current Species:", species)
+
+            if species == "Vin'rou" then
+                print("Detected Vin'rou species")
+                task.wait(5)
+                local age = playerData:GetAttribute("Age") or 0
+                if age >= 0 then
+                    print("Character age is " .. age .. ", deleting slots and purchasing Eulopii")
+                    local deleteRemote = remotes:WaitForChild("DeleteSlotRemote", 10)
+                    if not deleteRemote then
+                        print("DeleteSlotRemote not found")
+                    else
+                        print("Deleting creature in Slot1")
+                        local deleteSlot1Args = {
+                            "Slot1",
+                            false
+                        }
+                        local deleteSlot1Success, deleteSlot1Result = pcall(function()
+                            return deleteRemote:InvokeServer(unpack(deleteSlot1Args))
+                        end)
+
+                        if deleteSlot1Success then
+                            print("Successfully deleted creature from Slot1")
+                        else
+                            print("Failed to delete creature from Slot1: " .. tostring(deleteSlot1Result))
+                        end
+                        task.wait(1)
+
+                        print("Deleting creature in Slot2")
+                        local deleteSlot2Args = {
+                            "Slot2",
+                            false
+                        }
+                        local success, result = pcall(function()
+                            return deleteRemote:InvokeServer(unpack(deleteSlot2Args))
+                        end)
+
+                        if success then
+                            print("Successfully deleted creature from Slot2")
+                        else
+                            print("Failed to delete creature from Slot2: " .. tostring(result))
+                        end
+                        task.wait(1)
+
+                        print("Deleting creature in Slot3")
+                        local deleteSlot3Args = {
+                            "Slot3",
+                            false
+                        }
+                        local success, result = pcall(function()
+                            return deleteRemote:InvokeServer(unpack(deleteSlot3Args))
+                        end)
+
+                        if success then
+                            print("Successfully deleted creature from Slot3")
+                        else
+                            print("Failed to delete creature from Slot3: " .. tostring(result))
+                        end
+                        task.wait(15)
+                    end
+
+                    print("Purchasing 3 Eulopii creatures")
+                    local purchaseCreatureRemote = remotes:WaitForChild("PurchaseCreatureRemote", 10)
+                    if not purchaseCreatureRemote then
+                        print("PurchaseCreatureRemote not found")
+                    else
+                        for i = 1, 3 do
+                            local purchaseArgs = {
+                                "TrialCreatures",
+                                "Eulopii",
+                                false
+                            }
+
+                            local success, result = pcall(function()
+                                return purchaseCreatureRemote:InvokeServer(unpack(purchaseArgs))
+                            end)
+
+                            if success then
+                                print("Successfully purchased Eulopii (" .. i .. "/3)")
+                            else
+                                print("Failed to purchase Eulopii: " .. tostring(result))
+                            end
+
+                            task.wait(3)
+                        end
+                    end
+                else
+                    print("Character age is " .. age .. ", not old enough for actions (needs 65+)")
+
+                    local purchaseCreatureRemote = remotes:WaitForChild("PurchaseCreatureRemote", 10)
+                    if not purchaseCreatureRemote then
+                        print("PurchaseCreatureRemote not found")
+                        return
+                    end
+
+                    for i = 1, 3 do
+                        local purchaseArgs = {
+                            "TrialCreatures",
+                            "Eulopii",
+                            false
+                        }
+
+                        local success, result = pcall(function()
+                            return purchaseCreatureRemote:InvokeServer(unpack(purchaseArgs))
+                        end)
+
+                        if success then
+                            print("Successfully purchased Eulopii (" .. i .. "/3)")
+                        else
+                            print("Failed to purchase Eulopii: " .. tostring(result))
+                        end
+
+                        task.wait(1)
+                    end
+                end
+            elseif species == "Eulopii" then
+                print("Detected Eulopii species, no action needed")
+            else
+                print("Unknown species: " .. tostring(species))
+            end
+            task.wait(5)
+
+            taskCompleted = true
+            print("SpeciesHandlerLoop: Task completed successfully, function will not run again")
+        end)
+
+        if not success then
+            print("Error in SpeciesHandlerLoop: " .. tostring(err))
+            task.wait(5)
+        end
+    end
+end
+
+local function SpeciesHandler()
+    task.spawn(SpeciesHandlerLoop)
+    task.wait(3)
+    return true
+end
+
+local function AutoRespawn()
+    local PlayerGui = LocalPlayer.PlayerGui
+
+    local function Clicked_Ui(path)
+        GuiService.SelectedObject = path
+    end
+
+    local function Click_NOW()
+        VirtualInputManager:SendKeyEvent(true, 13, false, game)
+        task.wait(0.1)
+        VirtualInputManager:SendKeyEvent(false, 13, false, game)
+        task.wait(5)
+        Clicked_Ui(nil)
+    end
+
+    local function GetRestartSlots()
+        local checkslotrestart = {}
+        local slotsFrame = PlayerGui.SaveSelectionGui.ContainerFrame.AllSlotsFrame.SlotsFrame
+        for i = 1, 3 do
+            if slotsFrame[tostring(i)].InnerFrame.CreatureFrame.ButtonsFrame.RestartButton.Visible then
+                table.insert(checkslotrestart, tostring(i))
+            end
+        end
+        return checkslotrestart
+    end
+
+    local function FindUniqueSlot()
+        local pagesFrame = PlayerGui.SaveSelectionGui.ContainerFrame.AllSlotsFrame.PagesFrame
+        local colors = {
+            ["1"] = pagesFrame["1"].BackgroundColor3,
+            ["2"] = pagesFrame["2"].BackgroundColor3,
+            ["3"] = pagesFrame["3"].BackgroundColor3
+        }
+
+        if colors["1"] == colors["2"] and colors["1"] ~= colors["3"] then
+            return "3"
+        elseif colors["1"] == colors["3"] and colors["1"] ~= colors["2"] then
+            return "2"
+        elseif colors["2"] == colors["3"] and colors["2"] ~= colors["1"] then
+            return "1"
+        end
+        return nil
+    end
+
+    local function HandleRespawn()
+        local character = workspace.Characters:FindFirstChild(LocalPlayer.Name)
+        if not character then
+            if PlayerGui.DeathGui.Enabled then
+                Clicked_Ui(PlayerGui.DeathGui.ContainerFrame.BottomFrame.ButtonsFrame.Return.UpperLabel)
+                Click_NOW()
+
+                local checkslotrestart = GetRestartSlots()
+                if #checkslotrestart > 0 then
+                    local slot = FindUniqueSlot()
+                    if slot and table.find(checkslotrestart, slot) then
+                        Clicked_Ui(PlayerGui.SaveSelectionGui.ContainerFrame.AllSlotsFrame.SlotsFrame[slot].InnerFrame
+                            .CreatureFrame.ButtonsFrame.RestartButton.UpperLabel)
+                        Click_NOW()
+
+                        if PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreature.Visible then
+                            if PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreature.KeepMutationsButton.SelectedLabel.Visible then
+                                Clicked_Ui(PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreature
+                                    .KeepMutationsButton)
+                                Click_NOW()
+                            end
+                            Clicked_Ui(PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreature.RunButton.UpperLabel)
+                            Click_NOW()
+                        elseif PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreatureNoMutations.Visible then
+                            Clicked_Ui(PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreatureNoMutations.RunButton
+                                .UpperLabel)
+                            Click_NOW()
+                        end
+                    else
+                        Clicked_Ui(PlayerGui.SaveSelectionGui.ContainerFrame.AllSlotsFrame.SlotsFrame["2"].InnerFrame
+                            .CreatureFrame.ButtonsFrame.PlayButton.UpperLabel)
+                        Click_NOW()
+                    end
+                end
+            else
+                local checkslotrestart = GetRestartSlots()
+                if #checkslotrestart > 0 then
+                    local slot = FindUniqueSlot()
+                    if slot and table.find(checkslotrestart, slot) then
+                        Clicked_Ui(PlayerGui.SaveSelectionGui.ContainerFrame.AllSlotsFrame.SlotsFrame[slot].InnerFrame
+                            .CreatureFrame.ButtonsFrame.RestartButton.UpperLabel)
+                        Click_NOW()
+
+                        if PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreature.Visible then
+                            if PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreature.KeepMutationsButton.SelectedLabel.Visible then
+                                Clicked_Ui(PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreature
+                                    .KeepMutationsButton)
+                                Click_NOW()
+                            end
+                            Clicked_Ui(PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreature.RunButton.UpperLabel)
+                            Click_NOW()
+                        elseif PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreatureNoMutations.Visible then
+                            Clicked_Ui(PlayerGui.PromptGui.PromptFrame.PromptFrames.RestartCreatureNoMutations.RunButton
+                                .UpperLabel)
+                            Click_NOW()
+                        end
+                    else
+                        Clicked_Ui(PlayerGui.SaveSelectionGui.ContainerFrame.AllSlotsFrame.SlotsFrame["2"].InnerFrame
+                            .CreatureFrame.ButtonsFrame.PlayButton.UpperLabel)
+                        Click_NOW()
+                    end
+                else
+                    local slot = FindUniqueSlot() or "2"
+                    Clicked_Ui(PlayerGui.SaveSelectionGui.ContainerFrame.AllSlotsFrame.SlotsFrame[slot].InnerFrame
+                        .CreatureFrame.ButtonsFrame.PlayButton.UpperLabel)
+                    Click_NOW()
+                end
+            end
+        end
+    end
+
+    while true do
+        local success, err = pcall(function()
+            HandleRespawn()
+        end)
+        if not success then
+            task.wait(1)
+        end
+        task.wait(2)
+    end
+end
+
+local function UnlockTrade()
+    local player = LocalPlayer
+    local playerGui = player.PlayerGui
+    local data = playerGui:WaitForChild("Data", 10)
+    local unlocks = data and data:WaitForChild("Unlocks", 10)
+    local saveSelectionGui = playerGui:WaitForChild("SaveSelectionGui", 10)
+    local tradeRealm = saveSelectionGui and saveSelectionGui:WaitForChild("ContainerFrame", 10)
+        and saveSelectionGui.ContainerFrame:WaitForChild("BottomFrame", 10)
+        and saveSelectionGui.ContainerFrame.BottomFrame:WaitForChild("SecondaryButtonsFrame", 10)
+        and saveSelectionGui.ContainerFrame.BottomFrame.SecondaryButtonsFrame:WaitForChild("TradeRealm", 10)
+    local purchaseItemRemote = ReplicatedStorage:WaitForChild("Remotes", 10)
+        and ReplicatedStorage.Remotes:WaitForChild("PurchaseItemRemote", 10)
+
+    local function checkAndRandomizePurchase()
+        if not data then
+            return false
+        end
+        if not unlocks then
+            return false
+        end
+        if not tradeRealm then
+            return false
+        end
+        if not purchaseItemRemote then
+            return false
+        end
+
+        local valueGreaterThanZeroCount = 0
+        for _, child in ipairs(unlocks:GetChildren()) do
+            if (child:IsA("IntValue") or child:IsA("NumberValue")) and child.Value > 0 then
+                valueGreaterThanZeroCount = valueGreaterThanZeroCount + 1
+            end
+        end
+
+        local coins = data:FindFirstChild("Coins")
+        local shouldRandomize = (valueGreaterThanZeroCount < 10 or tradeRealm.Visible == false) and
+            (coins and coins.Value >= 1000)
+        if shouldRandomize then
+            local randomChoice = math.random(1, 2)
+            local args
+            if randomChoice == 1 then
+                args = { "Herbivores", 1 }
+            else
+                args = { "Carnivores", 1 }
+            end
+
+            local success, result = pcall(function()
+                return purchaseItemRemote:InvokeServer(unpack(args))
+            end)
+            return true
+        else
+            return false
+        end
+    end
+
+    while true do
+        local continueLoop = checkAndRandomizePurchase()
+        if not continueLoop then
+            break
+        end
+        wait(1)
+    end
+end
+
+local function AutoMissionV2()
+    local Interactions = workspace:WaitForChild("Interactions")
+    local Regions = Interactions:WaitForChild("Regions")
+    local Characters = workspace:WaitForChild("Characters")
+    local FoodFolder = Interactions:WaitForChild("Food")
+    local LakesFolder = Interactions:WaitForChild("Lakes")
+    local MudFolder = Interactions:WaitForChild("Mud")
+    local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+
+    local TELEPORT_DELAY = 4
+    local SETTLE_TIME = 7
+    local QUEST_PROGRESS_TIMEOUT = 80
+    local BITE_MAX_DISTANCE = 400
+    local AUTOSTUD_RADIUS = 300
+    local AUTOSTUD_SPEED = 0.6
+    local AUTOSTUD_STEPS = 72
+    local TWEEN_TIME = 1.5
+    local SECONDARY_ACTION_DELAY = 10
+
+    local TeleportLocations = {
+        { Name = "Algae Sandbar" },
+        { Name = "Central Rockfaces" },
+        { Name = "Coral Reef" },
+        { Name = "Desert" },
+        { Name = "Flower Cove" },
+        { Name = "Forgotten Shores" },
+        { Name = "Grassy Shoal" },
+        { Name = "Jungle" },
+        { Name = "Mesa" },
+        {
+            Name = "Mountains",
+            CFrame = CFrame.new(
+                -1491.43921, 396.664215, -915.012085,
+                0.999881208, 0.0148431053, 0.00414842693,
+                -0.0148480246, 0.999889076, 0.00115757447,
+                -0.00413078489, -0.00121903291, 0.999990702
+            )
+        },
+        { Name = "Pride Rocks" },
+        { Name = "Redwoods" },
+        { Name = "Rocky Drop" },
+        { Name = "Seaweed Depths" },
+        { Name = "Shadow Isle" },
+        { Name = "Swamp Hill" },
+        { Name = "Tundra" },
+        { Name = "Volcano Island" }
+    }
+
+    local CurrentIndex = 1
+    local AutoStudEnabled = false
+    local CurrentTween = nil
+    local LatestPosition = nil
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart
+    local isEatRunning = false
+    local isDrinkRunning = false
+    local isMudRunning = false
+
+    local cachedUI = {
+        missionGui = nil,
+        hudGui = nil,
+        lastUpdate = 0,
+        cacheTime = 5
+    }
+
+    local function getCachedUI()
+        local currentTime = tick()
+        if not cachedUI.missionGui or (currentTime - cachedUI.lastUpdate) > cachedUI.cacheTime then
+            local success, result = pcall(function()
+                return {
+                    missionGui = LocalPlayer.PlayerGui:FindFirstChild("HUDGui"),
+                    hudGui = LocalPlayer.PlayerGui:FindFirstChild("HUDGui")
+                }
+            end)
+            if success and result then
+                cachedUI.missionGui = result.missionGui
+                cachedUI.hudGui = result.hudGui
+                cachedUI.lastUpdate = currentTime
+            end
+        end
+        return cachedUI.missionGui, cachedUI.hudGui
+    end
+
+    local function EnsureCharacter()
+        local timeout = 5
+        local startTime = tick()
+        character = LocalPlayer.Character
+        if not character then
+            local success, result = pcall(function()
+                return LocalPlayer.CharacterAdded:Wait()
+            end)
+            if success and result then
+                character = result
+            else
+                return false
+            end
+        end
+        if (tick() - startTime) >= timeout then return false end
+        local playerName = LocalPlayer.Name
+        local playerCharacter = Characters:FindFirstChild(playerName)
+        while not playerCharacter and (tick() - startTime) < timeout do
+            playerCharacter = Characters:FindFirstChild(playerName)
+            task.wait(0.1)
+        end
+        if not playerCharacter then return false end
+        humanoidRootPart = playerCharacter:FindFirstChild("HumanoidRootPart")
+        while not humanoidRootPart and (tick() - startTime) < timeout do
+            humanoidRootPart = playerCharacter:FindFirstChild("HumanoidRootPart")
+            task.wait(0.1)
+        end
+        if not humanoidRootPart then return false end
+        return true
+    end
+
+    local function TweenToPosition(targetPosition)
+        if not humanoidRootPart or not humanoidRootPart.Parent then return end
+        local tweenInfo = TweenInfo.new(TWEEN_TIME, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+        local tween = TweenService:Create(humanoidRootPart, tweenInfo, { CFrame = CFrame.new(targetPosition) })
+        tween:Play()
+        tween.Completed:Wait()
+    end
+
+    local function GetRegionCFrame(Location)
+        if Location.CFrame then
+            if typeof(Location.CFrame) ~= "CFrame" then return nil end
+            return Location.CFrame
+        end
+        local Region = Regions:FindFirstChild(Location.Name)
+        if not Region then return nil end
+        local regionCFrame = Region:GetPivot()
+        if typeof(regionCFrame) ~= "CFrame" then return nil end
+        return regionCFrame
+    end
+
+    local function TeleportTo(CFrame, RegionName)
+        if not EnsureCharacter() then return false end
+        local radius = 10
+        local theta = math.random() * 2 * math.pi
+        local r = radius * math.sqrt(math.random())
+        local offsetX = r * math.cos(theta)
+        local offsetZ = r * math.sin(theta)
+        local targetPosition = CFrame.Position + Vector3.new(offsetX, 0, offsetZ)
+        local newCFrame = CFrame + (targetPosition - CFrame.Position)
+        humanoidRootPart.CFrame = newCFrame
+        return true
+    end
+
+    local function CheckAttackOrHealCreatureQuest(RegionName)
+        local success, result = pcall(function()
+            return LocalPlayer.PlayerGui.Data.Missions.RegionMissions[RegionName].AttackOrHealCreature.Value
+        end)
+        if success then
+            return result
+        end
+        return nil
+    end
+
+    local function CheckDistanceTravelledQuest(RegionName)
+        local success, result = pcall(function()
+            local distanceQuest = LocalPlayer.PlayerGui.Data.Missions.RegionMissions[RegionName].DistanceTravelled
+            local amount = distanceQuest:FindFirstChild("Amount")
+            if not amount then return false, false, nil end
+            return true, distanceQuest.Value, amount.Value
+        end)
+        if success then
+            return result
+        end
+        return false, false, nil
+    end
+
+    local function GetAllQuestStates(RegionName)
+        local success, result = pcall(function()
+            local region = LocalPlayer.PlayerGui.Data.Missions.RegionMissions[RegionName]
+            local questStates = {}
+            for _, quest in ipairs(region:GetChildren()) do
+                if quest:IsA("BoolValue") or quest:IsA("NumberValue") or quest:IsA("IntValue") then
+                    questStates[quest.Name] = quest.Value
+                end
+            end
+            return questStates
+        end)
+        if success and result and next(result) ~= nil then
+            return result
+        end
+        return nil
+    end
+
+    local function AreQuestsCompleted(RegionName)
+        local success, result = pcall(function()
+            local region = LocalPlayer.PlayerGui.Data.Missions.RegionMissions[RegionName]
+            local allQuestsCompleted = true
+            local questsFound = false
+            for _, quest in ipairs(region:GetChildren()) do
+                if quest:IsA("BoolValue") or quest:IsA("NumberValue") or quest:IsA("IntValue") then
+                    questsFound = true
+                    if quest.Value == false then
+                        allQuestsCompleted = false
+                    end
+                end
+            end
+            return questsFound and allQuestsCompleted
+        end)
+        if success then
+            return result
+        end
+        return false
+    end
+
+    local function FindClosestPlayer()
+        if not EnsureCharacter() then return nil end
+        local localRoot = humanoidRootPart
+        local closestPlayer = nil
+        local closestDistance = math.huge
+        for _, child in pairs(Characters:GetChildren()) do
+            if child:IsA("Model") and child ~= character and child:FindFirstChild("Hitbox") then
+                local player = Players:GetPlayerFromCharacter(child)
+                if player and player ~= LocalPlayer then
+                    local targetChar = Characters:FindFirstChild(player.Name)
+                    if not targetChar then continue end
+                    local targetHitbox = targetChar:FindFirstChild("Hitbox")
+                    if not targetHitbox then continue end
+                    local distance = (localRoot.Position - targetHitbox.Position).Magnitude
+                    if distance <= BITE_MAX_DISTANCE and distance < closestDistance then
+                        closestDistance = distance
+                        closestPlayer = child
+                    end
+                end
+            end
+        end
+        return closestPlayer
+    end
+
+    local function SimulateMouseClick(x, y)
+        pcall(function()
+            VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1)
+            task.wait(0.05)
+            VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 1)
+        end)
+    end
+
+    local function GetScreenCenter()
+        if workspace.CurrentCamera then
+            local viewportSize = workspace.CurrentCamera.ViewportSize
+            return Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+        end
+        return Vector2.new(960, 540)
+    end
+
+    local function TeleportToTarget(targetCharacter)
+        if not EnsureCharacter() or not targetCharacter then return end
+        local targetPlayer = Players:GetPlayerFromCharacter(targetCharacter)
+        if not targetPlayer then return end
+        local targetChar = Characters:FindFirstChild(targetPlayer.Name)
+        if not targetChar then return end
+        local targetHitbox = targetChar:FindFirstChild("Hitbox")
+        if not targetHitbox then return end
+        humanoidRootPart.CFrame = CFrame.new(targetHitbox.Position)
+    end
+
+    local function PerformBite()
+        local biteStartTime = tick()
+        local BITE_TIMEOUT = 20
+        local localChar = Characters:FindFirstChild(LocalPlayer.Name)
+        if not localChar then return false end
+        local localData = localChar:FindFirstChild("Data")
+        if not localData then return false end
+        local localAge = localData:GetAttribute("Age") or 0
+
+        while tick() - biteStartTime < BITE_TIMEOUT do
+            if AreQuestsCompleted(TeleportLocations[CurrentIndex].Name) then
+                return true
+            end
+            if not EnsureCharacter() then return false end
+            local currentTarget = FindClosestPlayer()
+            if not currentTarget then return false end
+            
+            local targetPlayer = Players:GetPlayerFromCharacter(currentTarget)
+            if not targetPlayer then return false end
+            local targetChar = Characters:FindFirstChild(targetPlayer.Name)
+            if not targetChar then return false end
+            local targetHitbox = targetChar:FindFirstChild("Hitbox")
+            if not targetHitbox then return false end
+            local targetData = targetChar:FindFirstChild("Data")
+            if not targetData then return false end
+            local targetAge = targetData:GetAttribute("Age") or 0
+            local targetHealth = targetData:GetAttribute("h") or 0
+            local targetMaxHealth = targetData:GetAttribute("mh") or 1
+            local targetHealthPercentage = targetHealth / targetMaxHealth
+
+            if targetAge < (localAge - 20) then return false end
+            if targetHealthPercentage <= 0.5 then return false end
+
+            local poisonValue = 0
+            local success, poisonText = pcall(function()
+                return LocalPlayer.PlayerGui.HUDGui.BottomFrame.Other.AilmentsFrame.Poison.AmountLabel.Text
+            end)
+            if success then
+                poisonValue = tonumber(poisonText) or 0
+            end
+
+            local healthPercentage = 100
+            local healthSuccess, healthText = pcall(function()
+                return LocalPlayer.PlayerGui.HUDGui.BottomFrame.Other.Health.HoverLabel.Text
+            end)
+            if healthSuccess then
+                local percentageStr = string.match(healthText, "%((%d+)%%%)")
+                healthPercentage = percentageStr and tonumber(percentageStr) or 100
+            end
+
+            if poisonValue >= 22 or healthPercentage <= 60 then
+                while (poisonValue >= 2 or healthPercentage < 80) and tick() - biteStartTime < BITE_TIMEOUT do
+                    task.wait(1)
+
+                    success, poisonText = pcall(function()
+                        return LocalPlayer.PlayerGui.HUDGui.BottomFrame.Other.AilmentsFrame.Poison.AmountLabel.Text
+                    end)
+                    poisonValue = success and (tonumber(poisonText) or 0) or 0
+
+                    healthSuccess, healthText = pcall(function()
+                        return LocalPlayer.PlayerGui.HUDGui.BottomFrame.Other.Health.HoverLabel.Text
+                    end)
+                    healthPercentage = 100
+                    if healthSuccess then
+                        local percentageStr = string.match(healthText, "%((%d+)%%%)")
+                        healthPercentage = percentageStr and tonumber(percentageStr) or 100
+                    end
+                end
+                if tick() - biteStartTime >= BITE_TIMEOUT then
+                    return false
+                end
+            end
+
+            local questStatus = CheckAttackOrHealCreatureQuest(TeleportLocations[CurrentIndex].Name)
+            if questStatus == true then return true end
+
+            TeleportToTarget(currentTarget)
+            local center = GetScreenCenter()
+            SimulateMouseClick(center.X, center.Y)
+
+            task.wait(1)
+        end
+        return false
+    end
+
+    local function GetCirclePosition(centerPosition, radius, angle)
+        local x = centerPosition.X + math.cos(angle) * radius
+        local z = centerPosition.Z + math.sin(angle) * radius
+        return Vector3.new(x, centerPosition.Y, z)
+    end
+
+    local function StartAutoStud()
+        if not LatestPosition then return end
+        while AutoStudEnabled do
+            for i = 0, AUTOSTUD_STEPS do
+                if not AutoStudEnabled then break end
+                local angle = math.rad(i * (360 / AUTOSTUD_STEPS))
+                local targetPosition = GetCirclePosition(LatestPosition, AUTOSTUD_RADIUS, angle)
+                TweenToPosition(targetPosition)
+                task.wait(0.1)
+            end
+        end
+    end
+
+    local function Sniff()
+        while true do
+            pcall(function()
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.H, false, game)
+                task.wait(0.05)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.H, false, game)
+            end)
+            task.wait(12)
+        end
+    end
+
+    local function AutoCower()
+        local stateAilmentRemote = Remotes:WaitForChild("StateAilment")
+        while true do
+            pcall(function()
+                stateAilmentRemote:FireServer("Cower")
+            end)
+            task.wait(15)
+        end
+    end
+
+    local function GetClosestChild(Children, Callback, MaxDistance)
+        if not EnsureCharacter() then return nil end
+        local CurrentPosition = humanoidRootPart.Position
+        local ClosestMagnitude = MaxDistance or math.huge
+        local ClosestChild
+        for _, Child in Children do
+            if not Child:IsA("PVInstance") then continue end
+            if Callback and Callback(Child) then continue end
+            local Magnitude = (Child:GetPivot().Position - CurrentPosition).Magnitude
+            if Magnitude < ClosestMagnitude then
+                ClosestMagnitude = Magnitude
+                ClosestChild = Child
+            end
+        end
+        return ClosestChild
+    end
+
+    local function AutoEat()
+        if isEatRunning then return end
+        isEatRunning = true
+        local FoodRemote = Remotes:WaitForChild("Food")
+
+        while isEatRunning do
+            task.wait(2)
+            
+            local success, err = pcall(function()
+                if not EnsureCharacter() then return end
+                local HungerLabel = LocalPlayer.PlayerGui:FindFirstChild("HUDGui")
+                    and LocalPlayer.PlayerGui.HUDGui:FindFirstChild("BottomFrame")
+                    and LocalPlayer.PlayerGui.HUDGui.BottomFrame:FindFirstChild("Other")
+                    and LocalPlayer.PlayerGui.HUDGui.BottomFrame.Other:FindFirstChild("Hunger")
+                    and LocalPlayer.PlayerGui.HUDGui.BottomFrame.Other.Hunger:FindFirstChild("HoverLabel")
+                if not HungerLabel then return end
+
+                local hungerText = HungerLabel.Text
+                local hungerPercentage = tonumber(hungerText:match("(%d+)%%"))
+                if not hungerPercentage then return end
+                hungerPercentage = hungerPercentage / 100
+                
+                if hungerPercentage >= 0.8 then
+                    task.wait(10)
+                    return
+                elseif hungerPercentage >= 0.5 then
+                    task.wait(5)
+                end
+
+                local OriginalCFrame = humanoidRootPart.CFrame
+                local attempts = 0
+                while isEatRunning and attempts < 8 do
+                    attempts = attempts + 1
+                    local updatedHungerText = HungerLabel.Text
+                    local updatedHungerPercentage = tonumber(updatedHungerText:match("(%d+)%%"))
+                    if not updatedHungerPercentage then break end
+                    updatedHungerPercentage = updatedHungerPercentage / 100
+                    if updatedHungerPercentage >= 0.8 then break end
+
+                    local Closest = GetClosestChild(FoodFolder:GetChildren(), function(Child)
+                        local invalidNames = {
+                            "Carcass",
+                            "Carnivore Carcass",
+                            "Chunk",
+                            "Ribs",
+                            "Sea Ribs",
+                            "Rotten Food",
+                            "Rotten",
+                            "Herbivore"
+                        }
+                        for _, invalidName in ipairs(invalidNames) do
+                            if string.find(Child.Name:lower(), invalidName:lower(), 1, true) then
+                                return true
+                            end
+                        end
+
+                        if not Child:GetChildren()[1] then return true end
+                        local Value = Child:GetAttribute("Value")
+                        if not Value or Value <= 0 then return true end
+                        return false
+                    end)
+
+                    if not Closest then break end
+                    humanoidRootPart.CFrame = CFrame.new(Closest:GetPivot().Position)
+                    FoodRemote:FireServer(Closest)
+                    task.wait(0.5)
+                end
+                humanoidRootPart.CFrame = OriginalCFrame
+            end)
+            if not success then 
+                task.wait(3)
+            end
+        end
+        isEatRunning = false
+    end
+
+    local function AutoDrink()
+        if isDrinkRunning then return end
+        isDrinkRunning = true
+        while isDrinkRunning do
+            task.wait(3)
+            
+            local success, err = pcall(function()
+                if not EnsureCharacter() then return end
+                local Closest = GetClosestChild(LakesFolder:GetChildren(), function(Child)
+                    if Child:GetAttribute("Sickly") then return true end
+                end)
+                if not Closest then return end
+                Remotes.DrinkRemote:FireServer(Closest)
+            end)
+            if not success then 
+                task.wait(3)
+            end
+        end
+        isDrinkRunning = false
+    end
+
+    local function TeleportToMudAndReturn()
+        if not EnsureCharacter() or not MudFolder then return end
+        local originalCFrame = humanoidRootPart.CFrame
+        local closestMud = GetClosestChild(MudFolder:GetChildren(), nil, nil)
+        if not closestMud then return end
+        local mudCFrame = closestMud:GetPivot()
+        local radius = 1
+        local theta = math.random() * 2 * math.pi
+        local r = radius * math.sqrt(math.random())
+        local offsetX = r * math.cos(theta)
+        local offsetZ = r * math.sin(theta)
+        local targetPosition = mudCFrame.Position + Vector3.new(offsetX, 0, offsetZ)
+        local newCFrame = mudCFrame + (targetPosition - mudCFrame.Position)
+
+        local MAX_ASCENT_HEIGHT = 20
+        local ASCENT_STEP_SIZE = 3
+        local ASCENT_STEP_TIME = 0.2
+
+        local platform
+        pcall(function()
+            platform = Instance.new("Part")
+            platform.Size = Vector3.new(10, 1, 10)
+            platform.Position = targetPosition - Vector3.new(0, 5, 0)
+            platform.Anchored = true
+            platform.BrickColor = BrickColor.new("Bright green")
+            platform.Parent = workspace
+        end)
+
+        if platform then
+            task.spawn(function()
+                task.wait(5)
+                pcall(function()
+                    if platform and platform.Parent then
+                        platform:Destroy()
+                        platform = nil
+                    end
+                end)
+            end)
+        end
+
+        pcall(function()
+            humanoidRootPart.CFrame = newCFrame
+
+            local currentY = targetPosition.Y
+            local targetY = currentY + MAX_ASCENT_HEIGHT
+            local steps = math.ceil(MAX_ASCENT_HEIGHT / ASCENT_STEP_SIZE)
+
+            for i = 1, steps do
+                if not EnsureCharacter() then break end
+                local stepY = math.min(currentY + (i * ASCENT_STEP_SIZE), targetY)
+                local stepPosition = Vector3.new(targetPosition.X, stepY, targetPosition.Z)
+                local stepCFrame = CFrame.new(stepPosition) * (newCFrame - newCFrame.Position)
+
+                local tweenInfo = TweenInfo.new(ASCENT_STEP_TIME, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+                local tween = TweenService:Create(humanoidRootPart, tweenInfo, { CFrame = stepCFrame })
+                tween:Play()
+                tween.Completed:Wait()
+            end
+
+            Remotes.Mud:FireServer(closestMud)
+        end)
+
+        task.wait(4)
+
+        pcall(function()
+            Remotes.Mud:FireServer(closestMud)
+            humanoidRootPart.CFrame = originalCFrame
+        end)
+    end
+
+    local function AutoMud()
+        if isMudRunning then return end
+        isMudRunning = true
+        while isMudRunning do
+            task.wait(6)
+            
+            local success, err = pcall(function()
+                if not EnsureCharacter() then
+                    isMudRunning = false
+                    return
+                end
+                local amountLabel = LocalPlayer.PlayerGui:FindFirstChild("HUDGui")
+                    and LocalPlayer.PlayerGui.HUDGui:FindFirstChild("BottomFrame")
+                    and LocalPlayer.PlayerGui.HUDGui.BottomFrame:FindFirstChild("Mobile")
+                    and LocalPlayer.PlayerGui.HUDGui.BottomFrame.Mobile:FindFirstChild("AilmentsFrame")
+                    and LocalPlayer.PlayerGui.HUDGui.BottomFrame.Mobile.AilmentsFrame:FindFirstChild("Muddy")
+                    and LocalPlayer.PlayerGui.HUDGui.BottomFrame.Mobile.AilmentsFrame.Muddy:FindFirstChild("AmountLabel")
+                if not amountLabel or not amountLabel:IsA("TextLabel") then
+                    TeleportToMudAndReturn()
+                    return
+                end
+                local amountValue = tonumber(amountLabel.Text)
+                if amountValue and amountValue <= 80 then
+                    TeleportToMudAndReturn()
+                end
+                local Closest = GetClosestChild(MudFolder:GetChildren(), nil, nil)
+                if not Closest then return end
+                Remotes.Mud:FireServer(Closest)
+            end)
+            if not success then 
+                task.wait(2)
+            end
+        end
+        isMudRunning = false
+    end
+
+    LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+        character = newCharacter
+        local playerName = LocalPlayer.Name
+        local playerCharacter = Characters:WaitForChild(playerName, 10)
+        if not playerCharacter then return end
+        humanoidRootPart = playerCharacter:WaitForChild("HumanoidRootPart", 10)
+    end)
+
+    local regionCache = {
+        lastRegion = nil,
+        lastUpdate = 0,
+        cacheTime = 2
+    }
+
+    local function getCurrentRegion()
+        local currentTime = tick()
+        if regionCache.lastRegion and (currentTime - regionCache.lastUpdate) < regionCache.cacheTime then
+            return regionCache.lastRegion
+        end
+        
+        local success, regionText = pcall(function()
+            return LocalPlayer.PlayerGui.HUDGui.MissionsFrame.Other.TopFrame.InnerFrame.NameLabel.Text
+        end)
+        if success and regionText then
+            local words = {}
+            for word in regionText:gmatch("%S+") do
+                table.insert(words, word:sub(1, 1):upper() .. word:sub(2):lower())
+            end
+            regionCache.lastRegion = table.concat(words, " ")
+            regionCache.lastUpdate = currentTime
+            return regionCache.lastRegion
+        end
+        return nil
+    end
+
+    local function Autofarm()
+        local LastTeleportedIndex = nil
+        local LastRegionName = nil
+        local forceChangeIndex = false
+        local lastQuestCheck = 0
+
+        while true do
+            if AutoStudEnabled then
+                AutoStudEnabled = false
+                if CurrentTween then
+                    task.cancel(CurrentTween)
+                    CurrentTween = nil
+                end
+            end
+            isEatRunning = false
+            isDrinkRunning = false
+            isMudRunning = false
+
+            if forceChangeIndex then
+                CurrentIndex = (CurrentIndex % #TeleportLocations) + 1
+                if CurrentIndex == LastTeleportedIndex or CurrentIndex == (LastTeleportedIndex % #TeleportLocations) + 1 then
+                    CurrentIndex = (CurrentIndex % #TeleportLocations) + 1
+                end
+                forceChangeIndex = false
+            end
+
+            local Location = TeleportLocations[CurrentIndex]
+            if not Location then
+                CurrentIndex = 1
+                LastTeleportedIndex = nil
+                LastRegionName = nil
+                forceChangeIndex = false
+                continue
+            end
+
+            local TargetCFrame = GetRegionCFrame(Location)
+            if not TargetCFrame then
+                CurrentIndex = (CurrentIndex % #TeleportLocations) + 1
+                if CurrentIndex == LastTeleportedIndex or CurrentIndex == (LastTeleportedIndex % #TeleportLocations) + 1 then
+                    CurrentIndex = (CurrentIndex % #TeleportLocations) + 1
+                end
+                continue
+            end
+
+            local shouldTeleport = true
+            if Location.Name == LastRegionName then
+                shouldTeleport = false
+                CurrentIndex = (CurrentIndex % #TeleportLocations) + 1
+                if CurrentIndex == LastTeleportedIndex or CurrentIndex == (LastTeleportedIndex % #TeleportLocations) + 1 then
+                    CurrentIndex = (CurrentIndex % #TeleportLocations) + 1
+                end
+            end
+
+            if shouldTeleport and TeleportTo(TargetCFrame, Location.Name) then
+                LastTeleportedIndex = CurrentIndex
+                LastRegionName = Location.Name
+                task.wait(SETTLE_TIME)
+
+                if not EnsureCharacter() then
+                    local retryTimeout = 5
+                    local retryStart = tick()
+                    while (tick() - retryStart) < retryTimeout do
+                        if EnsureCharacter() then break end
+                        task.wait(0.5)
+                    end
+                    if not EnsureCharacter() then
+                        CurrentIndex = (CurrentIndex % #TeleportLocations) + 1
+                        if CurrentIndex == LastTeleportedIndex or CurrentIndex == (LastTeleportedIndex % #TeleportLocations) + 1 then
+                            CurrentIndex = (CurrentIndex % #TeleportLocations) + 1
+                        end
+                        continue
+                    end
+                end
+
+                LatestPosition = humanoidRootPart.Position
+                local secondaryActionStartTime = tick()
+
+                local function updateLocationName()
+                    local actualRegion = getCurrentRegion()
+                    if actualRegion then
+                        Location.Name = actualRegion
+                    end
+                end
+
+                task.spawn(function()
+                    task.wait(SECONDARY_ACTION_DELAY)
+                    if not isEatRunning then task.spawn(AutoEat) end
+                    if not isDrinkRunning then task.spawn(AutoDrink) end
+                    if not isMudRunning then task.spawn(AutoMud) end
+                end)
+
+                local initialQuestStates = GetAllQuestStates(Location.Name)
+                local regionStartTime = tick()
+
+                while true do
+                    local currentTime = tick()
+
+                    if currentTime - lastQuestCheck >= 3 then
+                        lastQuestCheck = currentTime
+
+                        updateLocationName()
+
+                        local attackQuestStatus = CheckAttackOrHealCreatureQuest(Location.Name)
+                        if attackQuestStatus == false then
+                            local biteSuccess = PerformBite()
+                            if LatestPosition and EnsureCharacter() then
+                                TweenToPosition(LatestPosition)
+                            end
+                        end
+
+                        if AreQuestsCompleted(Location.Name) then
+                            forceChangeIndex = true
+                            break
+                        end
+                    end
+
+                    updateLocationName()
+
+                    local hasDistanceQuest, isQuestCompleted, amountValue = CheckDistanceTravelledQuest(Location.Name)
+                    if hasDistanceQuest and not isQuestCompleted and amountValue then
+                        AutoStudEnabled = true
+                        CurrentTween = task.spawn(StartAutoStud)
+                        local initialAmount = amountValue
+                        local timeElapsed = 0
+                        local checkInterval = 3
+                        local amountStagnantTime = 0
+
+                        while AutoStudEnabled do
+                            updateLocationName()
+
+                            if AreQuestsCompleted(Location.Name) then
+                                AutoStudEnabled = false
+                                break
+                            end
+                            hasDistanceQuest, isQuestCompleted, amountValue = CheckDistanceTravelledQuest(Location.Name)
+                            if not hasDistanceQuest or isQuestCompleted or not amountValue then break end
+                            if amountValue >= 2500 then break end
+                            if amountValue == initialAmount then
+                                amountStagnantTime = amountStagnantTime + checkInterval
+                                if amountStagnantTime >= 12 then break end
+                            else
+                                initialAmount = amountValue
+                                amountStagnantTime = 0
+                            end
+                            timeElapsed = timeElapsed + checkInterval
+                            task.wait(checkInterval)
+                        end
+
+                        AutoStudEnabled = false
+                        if CurrentTween then
+                            task.cancel(CurrentTween)
+                            CurrentTween = nil
+                        end
+                        if LatestPosition and EnsureCharacter() then
+                            TweenToPosition(LatestPosition)
+                        end
+                    end
+
+                    if initialQuestStates then
+                        local currentTime = tick()
+                        if (currentTime - regionStartTime) >= QUEST_PROGRESS_TIMEOUT then
+                            local currentQuestStates = GetAllQuestStates(Location.Name)
+                            if currentQuestStates then
+                                local hasProgress = false
+                                for questName, initialValue in pairs(initialQuestStates) do
+                                    local currentValue = currentQuestStates[questName]
+                                    if currentValue and currentValue ~= initialValue then
+                                        hasProgress = true
+                                        break
+                                    end
+                                end
+                                if not hasProgress then break end
+                                initialQuestStates = currentQuestStates
+                                regionStartTime = currentTime
+                            else
+                                break
+                            end
+                        end
+                    else
+                        break
+                    end
+
+                    if (tick() - secondaryActionStartTime) >= 200 then
+                        print("200 seconds elapsed since secondary actions started, forcing region change")
+                        forceChangeIndex = true
+                        break
+                    end
+
+                    task.wait(2)
+                end
+            end
+            task.wait(TELEPORT_DELAY)
+        end
+    end
+
+    task.spawn(Sniff)
+    task.spawn(AutoCower)
+    task.spawn(Autofarm)
+    
+    task.spawn(function()
+        while true do
+            task.wait(300)
+            local success, errorMsg = pcall(function()
+                collectgarbage("collect")
+                
+                local memUsage = collectgarbage("count")
+                if memUsage > 120000 then
+                    warn("High memory usage in AutoMissionV2: " .. memUsage .. "KB")
+                    
+                    cachedUI = {
+                        missionGui = nil,
+                        hudGui = nil,
+                        lastUpdate = 0,
+                        cacheTime = 5
+                    }
+                    regionCache = {
+                        lastRegion = nil,
+                        lastUpdate = 0,
+                        cacheTime = 2
+                    }
+                end
+            end)
+            
+            if not success then
+                warn("Error in AutoMissionV2 memory management: " .. tostring(errorMsg))
+            end
+        end
+    end)
+end
+
+local function AutoClosePromptGui()
+    local Players = game:GetService("Players")
+    local GuiService = game:GetService("GuiService")
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    local LocalPlayer = Players.LocalPlayer
+    local PlayerGui = LocalPlayer.PlayerGui
+
+    local function getFullPath(instance)
+        if not instance then
+            return "nil"
+        end
+
+        local path = instance.Name
+        local current = instance.Parent
+        while current and current ~= game do
+            path = current.Name .. "." .. path
+            current = current.Parent
+        end
+        return "game." .. path
+    end
+
+    local function verifySelectedButton(expected)
+        local selectedObject = GuiService.SelectedObject
+        if not selectedObject then
+            print("Error: No UI selected")
+            return false
+        end
+
+        if not selectedObject:IsA("GuiObject") then
+            print("Error: Selected object is not a GuiObject: " .. selectedObject.ClassName)
+            return false
+        end
+
+        local fullPath = getFullPath(selectedObject)
+        local expectedPath = getFullPath(expected)
+
+        print("Selected UI: " .. fullPath)
+        print("Expected UI: " .. expectedPath)
+
+        if fullPath == expectedPath then
+            print("Verified: Found correct button")
+            return true
+        else
+            print("Error: Wrong button selected")
+            return false
+        end
+    end
+
+    local function Clicked_Ui(path)
+        GuiService.SelectedObject = path
+    end
+
+    local function Click_NOW()
+        if GuiService.SelectedObject then
+            VirtualInputManager:SendKeyEvent(true, 13, false, game)
+            wait(0.07)
+            VirtualInputManager:SendKeyEvent(false, 13, false, game)
+            wait(1)
+            Clicked_Ui(nil)
+        else
+            print("Error: Attempted to click with no UI selected")
+        end
+    end
+    local function AutoClickLoop()
+        while true do
+            if PlayerGui:FindFirstChild("PromptGui") and
+                PlayerGui.PromptGui.PromptFrame.PromptFrames.NotifyCombatLog.Visible then
+                local targetButton = PlayerGui.PromptGui.PromptFrame.PromptFrames.NotifyCombatLog.RunButton.UpperLabel
+                Clicked_Ui(targetButton)
+                task.wait(1)
+                if verifySelectedButton(targetButton) then
+                    Click_NOW()
+                    wait(5)
+                    PlayerGui.PromptGui.PromptFrame.PromptFrames.NotifyCombatLog.Visible = false
+                    wait(0.5)
+                    PlayerGui.PromptGui.PromptFrame.Visible = false
+                    wait(1)
+                else
+                    print("NotifyCombatLog button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+            if PlayerGui:FindFirstChild("PromptGui") and
+                PlayerGui.PromptGui.PromptFrame.PromptFrames.EventTutorial.Visible then
+                local targetButton = PlayerGui.PromptGui.PromptFrame.PromptFrames.EventTutorial.BottomFrame.ButtonsFrame
+                    .CancelButton.UpperLabel
+                Clicked_Ui(targetButton)
+                task.wait(1)
+                if verifySelectedButton(targetButton) then
+                    Click_NOW()
+                    wait(5)
+                    PlayerGui.PromptGui.PromptFrame.PromptFrames.EventTutorial.Visible = false
+                    wait(0.5)
+                    PlayerGui.PromptGui.PromptFrame.Visible = false
+                    wait(1)
+                else
+                    print("EventTutorial button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+
+            if PlayerGui:FindFirstChild("PromptGui") and
+                PlayerGui.PromptGui.PromptFrame.PromptFrames.EventTutorial.Visible then
+                local targetButton = PlayerGui.PromptGui.PromptFrame.PromptFrames.EventTutorial.BottomFrame.ButtonsFrame
+                    .CancelButton.UpperLabel
+                Clicked_Ui(targetButton)
+                task.wait(1)
+                if verifySelectedButton(targetButton) then
+                    Click_NOW()
+                    wait(5)
+                    PlayerGui.PromptGui.PromptFrame.PromptFrames.EventTutorial.Visible = false
+                    wait(0.5)
+                    PlayerGui.PromptGui.PromptFrame.Visible = false
+                    wait(1)
+                else
+                    print("EventTutorial button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+
+            if PlayerGui:FindFirstChild("DailyLoginGui") and
+                PlayerGui.DailyLoginGui.ContainerFrame.Visible then
+                local claimButton = PlayerGui.DailyLoginGui.ContainerFrame.CurrencyFrame.ClaimButton.UpperLabel
+                Clicked_Ui(claimButton)
+                task.wait(1)
+                if verifySelectedButton(claimButton) then
+                    Click_NOW()
+                    wait(2)
+
+                    local closeButton = PlayerGui.DailyLoginGui.ContainerFrame.CurrencyFrame.CloseButton.UpperLabel
+                    Clicked_Ui(closeButton)
+                    task.wait(1)
+                    if verifySelectedButton(closeButton) then
+                        Click_NOW()
+                    else
+                        print("DailyLoginGui close button verification failed, retrying...")
+                        wait(1)
+                    end
+                else
+                    print("DailyLoginGui claim button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+            if PlayerGui:FindFirstChild("PromptGui") and
+                PlayerGui.PromptGui.PromptFrame.PromptFrames.BecomeElder.Visible then
+                local targetButton = PlayerGui.PromptGui.PromptFrame.PromptFrames.BecomeElder.CloseButton.UpperLabel
+                Clicked_Ui(targetButton)
+                task.wait(1)
+                if verifySelectedButton(targetButton) then
+                    Click_NOW()
+                    wait(5)
+                    PlayerGui.PromptGui.PromptFrame.PromptFrames.BecomeElder.Visible = false
+                    wait(0.5)
+                    PlayerGui.PromptGui.PromptFrame.Visible = false
+                    wait(1)
+                else
+                    print("BecomeElder button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+            if PlayerGui:FindFirstChild("HUDGui") and
+                PlayerGui.HUDGui.MacromapFrame.Visible then
+                local targetButton = PlayerGui.HUDGui.MacromapFrame.CloseButton.UpperLabel
+                Clicked_Ui(targetButton)
+                task.wait(1)
+                if verifySelectedButton(targetButton) then
+                    Click_NOW()
+                else
+                    print("MacromapFrame button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+            if PlayerGui:FindFirstChild("PromptGui") and
+                PlayerGui.PromptGui.PromptFrame.PromptFrames.PrivateServerInfo.Visible then
+                local targetButton = PlayerGui.PromptGui.PromptFrame.PromptFrames.PrivateServerInfo.ButtonsFrame
+                    .RunButton
+                    .UpperLabel
+                Clicked_Ui(targetButton)
+                task.wait(1)
+                if verifySelectedButton(targetButton) then
+                    Click_NOW()
+                    wait(5)
+                    PlayerGui.PromptGui.PromptFrame.PromptFrames.PrivateServerInfo.Visible = false
+                    wait(0.5)
+                    PlayerGui.PromptGui.PromptFrame.Visible = false
+                    wait(1)
+                else
+                    print("PrivateServerInfo button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+            if PlayerGui:FindFirstChild("LandSeaSkyGui") and
+                PlayerGui.LandSeaSkyGui.ContainerFrame.ContainerFrame.Visible then
+                local targetButton = PlayerGui.LandSeaSkyGui.ContainerFrame.ContainerFrame.CloseButton.UpperLabel
+                Clicked_Ui(targetButton)
+                task.wait(1)
+                if verifySelectedButton(targetButton) then
+                    Click_NOW()
+                    wait(2)
+                else
+                    print("LandSeaSkyGui button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+
+            if PlayerGui:FindFirstChild("PromptGui") and
+                PlayerGui.PromptGui.PromptFrame.PromptFrames.BundlesSurface.Visible then
+                local targetButton = PlayerGui.PromptGui.PromptFrame.PromptFrames.BundlesSurface.BottomFrame
+                    .ButtonsFrame.CancelButton.UpperLabel
+                Clicked_Ui(targetButton)
+                task.wait(1)
+                if verifySelectedButton(targetButton) then
+                    Click_NOW()
+                    wait(5)
+                    PlayerGui.PromptGui.PromptFrame.PromptFrames.BundlesSurface.Visible = false
+                    wait(0.5)
+                    PlayerGui.PromptGui.PromptFrame.Visible = false
+                    wait(1)
+                else
+                    print("BundlesSurface button verification failed, retrying...")
+                    wait(1)
+                end
+            end
+
+            task.wait(1)
+        end
+        wait(5)
+    end
+
+    task.spawn(AutoClickLoop)
+end
+
+
+local function monitorDeathPoints()
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local GuiService = game:GetService("GuiService")
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    local Workspace = game:GetService("Workspace")
+    local LocalPlayer = Players.LocalPlayer
+
+    local function Clicked_Ui(path)
+        GuiService.SelectedObject = path
+    end
+
+    local function Click_NOW()
+        VirtualInputManager:SendKeyEvent(true, 13, false, game)
+        task.wait(0.1)
+        VirtualInputManager:SendKeyEvent(false, 13, false, game)
+        task.wait(3)
+        Clicked_Ui(nil)
+    end
+
+    local function interactWithUI()
+        local successHealth, healthPath = pcall(function()
+            return LocalPlayer.PlayerGui
+                :WaitForChild("HUDGui")
+                .BottomFrame
+                .Other
+                .Health
+        end)
+        if successHealth then
+            Clicked_Ui(healthPath)
+            task.wait(0.1)
+            Click_NOW()
+        else
+            warn("Error accessing Health UI: " .. tostring(healthPath))
+        end
+
+        task.wait(4)
+
+        local successSurvival, survivalPath = pcall(function()
+            return LocalPlayer.PlayerGui
+                :WaitForChild("CreatureInfoGui")
+                .ContainerFrame
+                .TabButtons
+                .TopFrame
+                .SurvivalStats
+                .UpperLabel
+        end)
+        if successSurvival then
+            Clicked_Ui(survivalPath)
+            task.wait(0.1)
+            Click_NOW()
+        else
+            warn("Error accessing SurvivalStats UI: " .. tostring(survivalPath))
+        end
+
+        task.wait(4)
+
+        
+        local successClose, closePath = pcall(function()
+            return LocalPlayer.PlayerGui
+                :WaitForChild("CreatureInfoGui")
+                .ContainerFrame
+                .CloseButton
+                .UpperLabel
+        end)
+        if successClose then
+            Clicked_Ui(closePath)
+            task.wait(0.1)
+            Click_NOW()
+        else
+            warn("Error accessing CloseButton UI: " .. tostring(closePath))
+        end
+    end
+
+    
+    while true do
+        
+        local character
+        while not character do
+            local success, result = pcall(function()
+                return Workspace:WaitForChild("Characters"):FindFirstChild(LocalPlayer.Name)
+            end)
+            if success and result then
+                character = result
+            else
+                task.wait(10)
+            end
+        end
+
+        
+        task.wait(10)
+
+        
+        local success, deathPointsText = pcall(function()
+            local textLabel = LocalPlayer.PlayerGui
+                :WaitForChild("CreatureInfoGui")
+                .ContainerFrame
+                :WaitForChild("TabFrames")
+                .SurvivalStats
+                :WaitForChild("GeneralFrame")
+                .StatsFrame
+                :WaitForChild("DeathPoints")
+                .Actual
+            return textLabel
+        end)
+
+        if not success then
+            warn("Error initializing DeathPoints: " .. tostring(deathPointsText))
+        else
+            
+            local connection
+            connection = deathPointsText:GetPropertyChangedSignal("Text"):Connect(function()
+                
+                if not Workspace.Characters:FindFirstChild(LocalPlayer.Name) then
+                    connection:Disconnect()
+                    return
+                end
+                local value = tonumber(deathPointsText.Text)
+                if value and value >= 750 then
+                    
+                    task.spawn(function()
+                        while value >= 750 and Workspace.Characters:FindFirstChild(LocalPlayer.Name) do
+                            local fireSuccess, errorMsg = pcall(function()
+                                game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild(
+                                    "LavaSelfDamage"):FireServer()
+                            end)
+                            if not fireSuccess then
+                                warn("Error firing LavaSelfDamage: " .. tostring(errorMsg))
+                                break 
+                            else
+                                print("Fired LavaSelfDamage at DeathPoints >= 750")
+                            end
+                            task.wait(0.5) 
+                            
+                            value = tonumber(deathPointsText.Text) or 0
+                        end
+                    end)
+                end
+            end)
+        end
+
+        
+        while Workspace.Characters:FindFirstChild(LocalPlayer.Name) do
+            interactWithUI()
+            print("Completed UI interaction cycle, waiting 2 minutes...")
+            task.wait(120) 
+        end
+    end
+end
+
+
+local function AutoTailDrop()
+   
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Workspace = game:GetService("Workspace")
+    local LocalPlayer = Players.LocalPlayer
+
+    
+    local function formatRegionName(regionName)
+        
+        if not regionName or regionName == "" then
+            return nil
+        end
+
+        
+        local words = {}
+        for word in regionName:gmatch("%S+") do
+            table.insert(words, word:sub(1, 1):upper() .. word:sub(2):lower())
+        end
+
+        
+        return table.concat(words, " ")
+    end
+
+    
+    local function isEulopii()
+        local playerChar = Workspace.Characters:FindFirstChild(LocalPlayer.Name)
+        if not playerChar then
+            return false
+        end
+
+        local playerData = playerChar:FindFirstChild("Data")
+        if not playerData then
+            return false
+        end
+
+        local species = playerData:GetAttribute("Species")
+        return species == "Eulopii"
+    end
+
+    
+    local function getCurrentRegion()
+        local success, regionText = pcall(function()
+            return LocalPlayer.PlayerGui.HUDGui.MissionsFrame.Other.TopFrame.InnerFrame.NameLabel.Text
+        end)
+
+        if success and regionText then
+            return formatRegionName(regionText)
+        end
+
+        return nil
+    end
+
+    
+    local function isQuestComplete(regionName)
+        if not regionName then return false end
+
+        local success, result = pcall(function()
+            return LocalPlayer.PlayerGui.Data.Missions.RegionMissions[regionName].EatFoodDrinkWater.Value
+        end)
+
+        if success then
+            return result == true
+        end
+
+        return false
+    end
+
+    
+    local function useTailDrop()
+        local args = {
+            "TailDrop"
+        }
+        local success, result = pcall(function()
+            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ActivateAbility"):FireServer(unpack(args))
+        end)
+
+        return success
+    end
+
+    
+    while true do
+
+        if not isEulopii() then
+            print("Current character is not Eulopii, waiting...")
+            task.wait(10)
+            continue
+        end
+
+        
+        local regionName = getCurrentRegion()
+        if not regionName then
+            print("Could not determine current region, waiting...")
+            task.wait(5)
+            continue
+        end
+
+        print("Current region: " .. regionName)
+
+       
+        while not isQuestComplete(regionName) do
+            if not isEulopii() then
+                print("Character is no longer Eulopii, exiting inner loop")
+                break
+            end
+
+            local currentRegion = getCurrentRegion()
+            if currentRegion ~= regionName then
+                print("Region changed from " .. regionName .. " to " .. (currentRegion or "unknown"))
+                regionName = currentRegion
+            end
+
+            local success = useTailDrop()
+            if success then
+                print("Used TailDrop ability in " .. regionName)
+            else
+                print("Failed to use TailDrop ability, waiting...")
+            end
+
+            task.wait(2) 
+        end
+
+        print("Quest in " .. regionName .. " is now complete!")
+        task.wait(10) 
+    end
+end
+
+
+local function Main()
+    local tutorialCompleted = false
+    local startTime = os.clock() 
+    local TIMEOUT_SECONDS = 30   
+
+    task.spawn(function()
+        local success, errorMsg = pcall(TutorialAutomation)
+        if success then
+            tutorialCompleted = true
+        else
+            task.wait(5)
+            success, errorMsg = pcall(TutorialAutomation)
+            if success then
+                tutorialCompleted = true
+            end
+        end
+    end)
+
+    while not tutorialCompleted and os.clock() - startTime < TIMEOUT_SECONDS do
+        task.wait(1)
+    end
+
+    
+    task.spawn(function()
+        local success = pcall(Immune)
+        if not success then
+            task.wait(5)
+            pcall(Immune)
+        end
+    end)
+
+    
+    local characterMissingStartTime = nil 
+    local CHARACTER_TIMEOUT_SECONDS = 30  
+
+    while true do
+        local isTutorial = false
+        local success, tutorialValue = pcall(function()
+            return LocalPlayer.Settings.Tutorial.Value
+        end)
+
+        if success then
+            isTutorial = tutorialValue
+            characterMissingStartTime = nil 
+        else
+            
+            if not characterMissingStartTime then
+                characterMissingStartTime = os.clock() 
+            end
+        end
+
+        
+        if not isTutorial or (characterMissingStartTime and os.clock() - characterMissingStartTime >= CHARACTER_TIMEOUT_SECONDS) then
+        
+            task.spawn(SpeciesHandlerLoop)
+            task.spawn(AutoRespawn)
+            task.spawn(AutoMissionV2)
+            task.spawn(AutoClosePromptGui)
+            task.spawn(monitorDeathPoints)
+            task.spawn(AutoTailDrop) 
+            task.spawn(UnlockTrade)
+            break
+        end
+        task.wait(1)
+    end
+end
+
+task.spawn(function()
+    task.wait(2) 
+    local success = pcall(Main)
+    if not success then
+        task.wait(5)
+        pcall(Main)
+    end
+end)
